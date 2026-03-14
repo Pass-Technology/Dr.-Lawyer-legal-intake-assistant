@@ -31,41 +31,41 @@ def route_from_generate_questions(state: AgentState) -> str:
 # ----- PostgreSQL Checkpointer -----
 DB_URL = f"postgresql://postgres.trmcjhazbucmbiekzyih:{getenv('DB_PASSWORD')}@aws-1-eu-west-1.pooler.supabase.com:5432/postgres"
 
-with PostgresSaver.from_conn_string(DB_URL) as checkpointer: 
-    # await checkpointer.setup() # <- Run once
 
-    # ----- LangGraph Workflow Structure -----
-    workflow = StateGraph(state_schema=AgentState)
+# await checkpointer.setup() # <- Run once
 
-    workflow.add_node("generate_questions", generate_questions_node)
-    workflow.add_node("generate_final", generate_final_description_node)
-    workflow.add_node("get_answers", get_answers)
+# ----- LangGraph Workflow Structure -----
+workflow = StateGraph(state_schema=AgentState)
 
-    # Entry
-    workflow.add_edge(START, "generate_questions")
+workflow.add_node("generate_questions", generate_questions_node)
+workflow.add_node("generate_final", generate_final_description_node)
+workflow.add_node("get_answers", get_answers)
 
-    # Conditional edges immediately after generate_questions
-    workflow.add_conditional_edges(
-        "generate_questions",
-        route_from_generate_questions,
-        {
-            "generate_final": "generate_final",
-            "get_answers": "get_answers",
-            END: END
-        }
-    )
+# Entry
+workflow.add_edge(START, "generate_questions")
 
-    # Existing conditional edges after get_answers
-    workflow.add_conditional_edges(
-        "get_answers",
-        route_after_questions,
-        {
-            "generate_questions": "generate_questions",
-            "generate_final": "generate_final",
-            END: END
-        }
-    )
+# Conditional edges immediately after generate_questions
+workflow.add_conditional_edges(
+    "generate_questions",
+    route_from_generate_questions,
+    {
+        "generate_final": "generate_final",
+        "get_answers": "get_answers",
+        END: END
+    }
+)
 
-    workflow.add_edge("generate_final", END)
+# Existing conditional edges after get_answers
+workflow.add_conditional_edges(
+    "get_answers",
+    route_after_questions,
+    {
+        "generate_questions": "generate_questions",
+        "generate_final": "generate_final",
+        END: END
+    }
+)
 
-    graph = workflow.compile(interrupt_before=["get_answers"], checkpointer=checkpointer)
+workflow.add_edge("generate_final", END)
+
+graph = workflow.compile(interrupt_before=["get_answers"])

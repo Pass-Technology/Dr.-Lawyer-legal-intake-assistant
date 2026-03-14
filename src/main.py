@@ -1,11 +1,56 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
+from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
+from contextlib import asynccontextmanager
+from psycopg_pool import AsyncConnectionPool
+import os
+
 load_dotenv(".env")
 
 from routes import base, start_intake, optimize_offer, optimize_case_description, upload_parser
 
-app = FastAPI()
+# Setup the connection pool settings
+DB_URL = os.getenv("DATABASE_URL")
+if DB_URL and "sslmode" not in DB_URL:
+    DB_URL += "?sslmode=require"
+
+connection_kwargs = {
+    "autocommit": True,
+    "prepare_threshold": 0,
+}
+
+# Define the Lifespan (Startup/Shutdown logic)
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Create the pool object
+    pool = AsyncConnectionPool(
+        conninfo=DB_URL,
+        max_size=10,
+        kwargs=connection_kwargs,
+        open=False, # Add this to tell it NOT to open in the constructor
+    )
+    
+    # Explicitly open the pool (This is what the warning wants)
+    await pool.open()
+    
+    # Create the saver object
+    saver = AsyncPostgresSaver(pool)
+    
+    # Run setup
+    await saver.setup()
+    
+    # Store in state
+    app.state.checkpointer = saver
+    app.state.db_pool = pool
+    
+    yield
+    
+    # Close the pool on shutdown
+    await pool.close()
+
+# Pass lifespan to FastAPI
+app = FastAPI(lifespan=lifespan)
 
 origins = [
     "http://localhost:3000",       # React dev server (common)
