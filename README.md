@@ -9,6 +9,7 @@ The Legal Intake Assistant automates the initial client intake process by:
 - Iteratively gathering relevant facts and details
 - Synthesizing information into professional case summaries
 - Maintaining conversation context across multiple interactions
+- Processing uploaded documents (PDF, DOCX, TXT) and extracting relevant information
 
 This tool is designed to assist legal professionals in streamlining their intake workflow while ensuring comprehensive information collection.
 
@@ -17,9 +18,11 @@ This tool is designed to assist legal professionals in streamlining their intake
 - **Intelligent Question Generation**: AI-driven clarifying questions tailored to each case
 - **Iterative Information Gathering**: Multi-turn conversation flow with context retention
 - **Professional Case Summaries**: Automated generation of structured legal case descriptions
+- **Document Upload & Processing**: Upload PDF, DOCX, or TXT files for automatic text extraction and summarization
+- **Case Description Refinement**: Edit and refine generated descriptions based on user feedback
 - **Stateful Workflow**: Built on LangGraph with checkpoint management for reliable state handling
 - **RESTful API**: FastAPI-based endpoints for easy integration
-- **Flexible LLM Backend**: Configurable AI model support (currently using Grok via OpenRouter)
+- **Flexible LLM Backend**: Configurable AI model support (currently using Google Gemini 2.5 Flash)
 
 ## 🏗️ Architecture
 
@@ -129,6 +132,26 @@ Starts the legal intake process with an initial case description.
 }
 ```
 
+### Start Legal Intake with File Upload
+```http
+POST /api/v1/intake/start/{session_id}/file
+```
+
+Starts the legal intake process with an initial case description and an uploaded document. The document is automatically processed, summarized, and added to the context.
+
+**Request Type:** `multipart/form-data`
+
+**Form Fields:**
+- `initial_description` (text): Initial case description
+- `file` (file): Document file (PDF, DOCX, or TXT)
+
+**Example with cURL:**
+```bash
+curl -X POST "http://localhost:8000/api/v1/intake/start/session123/file" \
+  -F "initial_description=I need help with this contract dispute" \
+  -F "file=@contract.pdf"
+```
+
 ### Submit Intake Answers
 ```http
 POST /api/v1/intake/answers/{session_id}
@@ -169,8 +192,22 @@ Takes a lawyer's offer and rephrases it to be more professional and appealing.
 ```
 
 **Response:**
-```text
+```
 I can represent you in this case for a fee of $1,000 USD, with a strong likelihood of achieving a favorable outcome that keeps you out of legal custody.
+```
+
+### Simple Description Refinement
+```http
+POST /api/v1/simple_refine
+```
+
+Automatically improves a case description to be more professional without specific comments.
+
+**Request Body:**
+```json
+{
+  "description": "في حد ضربني فالشارع"
+}
 ```
 
 ## 🛠️ Technology Stack
@@ -178,7 +215,11 @@ I can represent you in this case for a fee of $1,000 USD, with a strong likeliho
 - **FastAPI**: Modern, fast web framework for building APIs
 - **LangGraph**: Framework for building stateful, multi-actor applications with LLMs
 - **LangChain**: LLM application framework
-- **OpenAI/OpenRouter**: LLM provider integration
+- **Google Gemini 2.5 Flash**: Primary LLM via OpenRouter
+- **PyMuPDF**: PDF text extraction
+- **python-docx**: Microsoft Word document processing
+- **OpenPyXL**: Excel file processing
+- **Pandas**: Data processing and analysis
 - **Pydantic**: Data validation and settings management
 - **Python 3.11+**: Core programming language
 
@@ -189,7 +230,15 @@ Dr.-Lawyer-legal-intake-assistant/
 ├── src/
 │   ├── main.py                 # FastAPI application entry point
 │   ├── routes/
-│   │   └── base.py            # API route definitions
+│   │   ├── base.py            # Base API route definitions
+│   │   ├── start_intake.py    # Legal intake workflow endpoints
+│   │   ├── optimize_offer.py  # Offer optimization endpoint
+│   │   ├── optimize_case_description.py  # Description refinement endpoints
+│   │   └── upload_parser.py   # Document upload and parsing endpoint
+│   ├── controllers/
+│   │   ├── document_parser.py # Document text extraction logic
+│   │   ├── summarizer.py      # Text summarization functionality
+│   │   └── process_file.py    # File processing utilities
 │   ├── workflow/
 │   │   ├── graph.py           # LangGraph workflow definition
 │   │   ├── nodes.py           # Workflow node implementations
@@ -199,7 +248,8 @@ Dr.-Lawyer-legal-intake-assistant/
 │   ├── .env                   # Environment variables
 │   └── pyproject.toml         # Project dependencies
 ├── assets/
-│   └── workflow.png           # Workflow visualization
+│   ├── workflow.png           # Workflow visualization
+│   └── Legal Intake Assistant.postman_collection.json  # Postman API collection
 └── README.md
 ```
 
@@ -218,20 +268,21 @@ Create a `.env` file in the `src` directory with the following variables (see `.
 
 ### LLM Configuration
 
-The default configuration uses Anthropic Claude Haiku 4.5 via OpenRouter. To change the model, edit `src/workflow/nodes.py`:
+The default configuration uses Google Gemini 2.5 Flash via OpenRouter. To change the model, edit `src/workflow/nodes.py`:
 
 ```python
 llm = ChatOpenAI(
     api_key=getenv("OPENROUTER_API_KEY"),
     base_url="https://openrouter.ai/api/v1",
-    model="anthropic/claude-haiku-4.5",  # Change model here
+    model="google/gemini-2.5-flash",  # Change model here
+    temperature=0.0,
 )
 ```
 
 **Alternative models** that work well with this application:
-- `x-ai/grok-4.1-fast` - xAI Grok model
+- `anthropic/claude-3.5-sonnet` - Anthropic Claude model
 - `openai/gpt-4o-mini` - OpenAI GPT-4 mini model
-- `google/gemini-flash-2.0` - Google Gemini Flash model
+- `x-ai/grok-4.1-fast` - xAI Grok model
 
 ## 🧪 Development
 
@@ -256,13 +307,13 @@ langgraph dev
 **Status**: In Development
 
 This project is currently under active development. Planned enhancements include:
-- Complete API endpoint implementation
 - Enhanced error handling and validation
 - Integration with legal knowledge bases
-- Multi-language support
+- Multi-language support improvements
 - Authentication and authorization
 - Case history and persistence
 - Advanced analytics and reporting
+- Support for more document formats
 
 ## 🤝 Contributing
 
