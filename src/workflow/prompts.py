@@ -82,6 +82,7 @@ Original Offer: {lawyer_offer}
 
 Provide your refined version that enhances the language while preserving the offer's substance.
 Output only the refined offer.
+Output the refined offer in the same language as the original.
 """)
     ]
 )
