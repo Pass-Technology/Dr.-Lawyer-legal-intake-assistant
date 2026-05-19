@@ -1,12 +1,21 @@
 from fastapi import APIRouter
-from workflow.nodes import llm
-from workflow.prompts import EDIT_DESCRIPTION_PROMPT, SIMPLE_REFINE_PROMPT
+from langchain_core.messages import HumanMessage
 from pydantic import BaseModel
+
+from workflow.nodes import llm
+from workflow.prompts import (
+    EDIT_DESCRIPTION_PROMPT,
+    SIMPLE_REFINE_PROMPT,
+    CaseSummaryAndTagsResult,
+    case_summary_and_tags_system,
+)
 
 refine_router = APIRouter(
     prefix="/api/v1",
     tags=["Utils"],
 )
+
+_summarize_runnable = llm.with_structured_output(CaseSummaryAndTagsResult)
 
 # ----- Optimize offer route -----
 class RefineRequest(BaseModel):
@@ -33,3 +42,18 @@ async def simple_refine(description: SimpleRefine):
     response = (await llm.ainvoke(prompt))
 
     return response.content
+
+
+class SummarizeCaseRequest(BaseModel):
+    case_description: str
+
+
+@refine_router.post("/summarize_case", response_model=CaseSummaryAndTagsResult)
+async def summarize_case(request: SummarizeCaseRequest):
+    """Return a short summary and categorization tags for a case description."""
+
+    result = await _summarize_runnable.ainvoke([
+        case_summary_and_tags_system,
+        HumanMessage(content=request.case_description),
+    ])
+    return result
