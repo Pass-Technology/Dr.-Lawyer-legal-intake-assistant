@@ -8,7 +8,7 @@ import os
 
 load_dotenv(".env")
 
-from routes import base, start_intake, optimize_offer, optimize_case_description, upload_parser
+from routes import base, start_intake, optimize, optimize_offer, optimize_case_description, upload_parser
 
 # Setup the connection pool settings
 DB_URL = os.getenv("DATABASE_URL")
@@ -73,5 +73,6 @@ app.add_middleware(
 app.include_router(start_intake.start_intake_router)
 app.include_router(upload_parser.upload_router)
 app.include_router(optimize_case_description.refine_router)
+app.include_router(optimize.optimize_router)
 app.include_router(optimize_offer.offer_router)
 app.include_router(base.base_router)
