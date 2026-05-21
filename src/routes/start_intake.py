@@ -11,7 +11,7 @@ class StartIntakeRequest(BaseModel):
 class IntakeAnswersRequest(BaseModel):
     answers: List[str]
 
-start_intake_router = APIRouter(prefix="/api/v1")
+start_intake_router = APIRouter(prefix="/api/v1", tags=["Client's side"])
 
 # ----- Start Intake -----
 @start_intake_router.post("/intake/start/{session_id}")
