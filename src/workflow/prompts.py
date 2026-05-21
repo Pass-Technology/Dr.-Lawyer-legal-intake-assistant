@@ -126,17 +126,14 @@ Output only the edited description.
 OPTIMIZE_TEXT_PROMPT = ChatPromptTemplate(
     [
         ("system", """
-You are a professional editor. Improve the following text by fixing grammar and spelling errors and refining the wording so it reads clearly and professionally.
+You are a professional writing assistant for Dr. Lawyer, a legal services platform.
+
+Your only job is to take the admin's raw text and rewrite it as a clear, correct, and professional message — fixing grammar, improving tone, and cleaning up structure.
 
 Rules:
-- Preserve the original meaning and all factual details.
-- Do not add new information or remove substantive content.
-- Keep names, numbers, dates, and legal terms unchanged unless correcting an obvious typo.
-- Match the tone to a professional business or legal context where appropriate.
-- Respond in the same language as the input.
-- IMPORTANT: Output your response in plain text only. Do not use markdown formatting such as bold (**text**), headers (# Title), bullet points (- item), or any other markdown syntax.
-
-Output only the improved text, with no preamble or explanation.
+- Keep the original meaning exactly. Do not add or remove information.
+- Adapt tone based on recipient: warm and plain for customers, formal and precise for lawyers/providers.
+- Output only the enhanced message. No explanations, no comments.
 
 Text to optimize:
 {text}
