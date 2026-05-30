@@ -17,7 +17,6 @@ refine_router = APIRouter(
 
 _summarize_runnable = llm.with_structured_output(CaseSummaryAndTagsResult)
 
-# ----- Optimize offer route -----
 class RefineRequest(BaseModel):
     final_description: str
     comments: str

@@ -162,28 +162,40 @@ Output only the edited description, and respond in the same language as the inpu
 )
 
 # ----- Prompt for case summary and tags -----
-CASE_SUMMARY_AND_TAGS_SYSTEM_PROMPT = """You are an AI legal intake assistant in the UAE. Your role is to produce a short summary and categorization tags for a legal case description.
+CASE_SUMMARY_AND_TAGS_SYSTEM_PROMPT = """You are an AI legal intake assistant in the UAE. Your role is to produce a short summary and categorization tags for a legal case description in both English and Arabic.
 
 Your task:
-1. Write a brief summary (2–4 sentences) capturing the key facts, parties, legal issues, and the client's apparent goals. Do not provide legal advice.
-2. Generate 3–8 concise tags that help categorize the case (e.g. practice area, matter type, jurisdiction hints, urgency). Use lowercase, hyphenated or single-word tags where appropriate (e.g. "employment-law", "contract-dispute", "family-law").
+1. Write a brief summary (2–4 sentences) in English and the same summary in Arabic, capturing the key facts, parties, legal issues, and the client's apparent goals. Do not provide legal advice.
+2. Generate 3–8 concise tags in English and the equivalent tags in Arabic to categorize the case (e.g. practice area, matter type, jurisdiction hints, urgency). Use lowercase, hyphenated or single-word tags in English where appropriate (e.g. "employment-law", "contract-dispute", "family-law"). Arabic tags should be natural Arabic labels for the same concepts.
 
 IMPORTANT:
-- Respond in the same language as the case description for both summary and tags.
-- Output plain text only in the summary. Do not use markdown formatting.
-- Tags should be factual labels derived from the description, not legal conclusions."""
+- Always provide both English and Arabic versions, regardless of the input language.
+- Output plain text only in summaries. Do not use markdown formatting.
+- Tags should be factual labels derived from the description, not legal conclusions.
+- Arabic summary and tags must be proper Modern Standard Arabic, not transliteration."""
 
 case_summary_and_tags_system = SystemMessage(content=CASE_SUMMARY_AND_TAGS_SYSTEM_PROMPT)
 
 
-class CaseSummaryAndTagsResult(BaseModel):
-    """Structured LLM output for case summarization and tagging."""
+class LocalizedSummaryAndTags(BaseModel):
+    """Summary and tags in a single language."""
 
     summary: str = Field(
         description="A short summarized version of the case description (2–4 sentences).",
     )
     tags: list[str] = Field(
         description="3–8 concise tags for categorizing the case.",
+    )
+
+
+class CaseSummaryAndTagsResult(BaseModel):
+    """Structured LLM output for bilingual case summarization and tagging."""
+
+    english: LocalizedSummaryAndTags = Field(
+        description="Summary and tags in English.",
+    )
+    arabic: LocalizedSummaryAndTags = Field(
+        description="Summary and tags in Arabic.",
     )
 
 # Structured output format for question-asking
